@@ -1,0 +1,163 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Game model
+model Game {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Game metadata
+  name      String?
+  userPosition Int
+  
+  // Relationships
+  players   Player[]
+  suggestions Suggestion[]
+  userCards  UserCard[]
+  solutions  Solution?
+  
+  // Additional properties
+  data      Json?    // Store serialized gameState for future recovery
+}
+
+// Player model
+model Player {
+  id        String   @id @default(cuid())
+  name      String
+  isUser    Boolean  @default(false)
+  cardCount Int      @default(0)
+  position  Int      // Player position in clockwise order
+  
+  // Relationships
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  gameId    String
+  
+  // Card statuses are stored in the CardStatus model
+  cardStatuses CardStatus[]
+  
+  // Suggestions made by or responded to by this player
+  suggestionsAsSuggester Suggestion[] @relation("Suggester")
+  suggestionsAsResponder Suggestion[] @relation("Responder")
+
+  @@unique([gameId, position])
+}
+
+// Card types
+enum CardCategory {
+  SUSPECT
+  WEAPON
+  ROOM
+}
+
+// Card model
+model Card {
+  id        String   @id @default(cuid())
+  name      String
+  category  CardCategory
+  
+  // Relationships
+  cardStatuses CardStatus[]
+  suggestions  SuggestionCard[]
+  userCards    UserCard[]
+  suspectSolutions Solution[] @relation("SuspectSolution")
+  weaponSolutions Solution[] @relation("WeaponSolution")
+  roomSolutions Solution[] @relation("RoomSolution")
+
+  @@unique([name, category])
+}
+
+// Card status for a player
+model CardStatus {
+  id        String   @id @default(cuid())
+  status    String   // HAS, DOES_NOT_HAVE, MAYBE_HAS, UNKNOWN
+  
+  // Relationships
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId  String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  cardId    String
+
+  @@unique([playerId, cardId])
+}
+
+// User's cards
+model UserCard {
+  id        String   @id @default(cuid())
+  
+  // Relationships
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  gameId    String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  cardId    String
+
+  @@unique([gameId, cardId])
+}
+
+// Suggestion model
+model Suggestion {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  
+  // Relationships
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  gameId    String
+  
+  // Player who made the suggestion
+  suggester Player   @relation("Suggester", fields: [suggesterId], references: [id], onDelete: Cascade)
+  suggesterId String
+  
+  // Player who responded (if any)
+  responder Player?  @relation("Responder", fields: [responderId], references: [id])
+  responderId String?
+  
+  // Cards involved in the suggestion
+  cards     SuggestionCard[]
+  
+  // Card that was shown (if known)
+  shownCardId String?
+}
+
+// Cards involved in a suggestion
+model SuggestionCard {
+  id        String   @id @default(cuid())
+  
+  // Relationships
+  suggestion Suggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
+  suggestionId String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  cardId    String
+  
+  // Whether this card was shown in response to the suggestion
+  wasShown  Boolean  @default(false)
+
+  @@unique([suggestionId, cardId])
+}
+
+// Solution model
+model Solution {
+  id        String   @id @default(cuid())
+  
+  // Relationships
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  gameId    String   @unique
+  
+  suspectCard Card?  @relation("SuspectSolution", fields: [suspectCardId], references: [id])
+  suspectCardId String?
+  
+  weaponCard Card?   @relation("WeaponSolution", fields: [weaponCardId], references: [id])
+  weaponCardId String?
+  
+  roomCard   Card?   @relation("RoomSolution", fields: [roomCardId], references: [id])
+  roomCardId String?
+}
