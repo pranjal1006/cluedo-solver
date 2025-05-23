@@ -71,7 +71,7 @@ export async function createGame(
         name,
         position: index,
         isUser: index === userPosition,
-        cardCount: 0, // We'll update this based on the game logic later
+        cardCount: userPosition === index ? userCards.length : 0,
         gameId: game.id,
       }
     });
@@ -120,100 +120,146 @@ export async function createGame(
 
 // Get game from database
 export async function getGameById(id: string): Promise<GameState | null> {
-  const game = await prisma.game.findUnique({
-    where: { id },
-    include: {
-      players: {
-        include: {
-          cardStatuses: {
-            include: {
-              card: true
+  try {
+    // Try to fetch the game with all relationships
+    const game = await prisma.game.findUnique({
+      where: { id },
+      include: {
+        players: {
+          include: {
+            cardStatuses: {
+              include: {
+                card: true
+              }
             }
+          },
+          orderBy: {
+            position: 'asc'
           }
         },
-        orderBy: {
-          position: 'asc'
-        }
-      },
-      suggestions: {
-        include: {
-          suggester: true,
-          responder: true,
-          cards: {
-            include: {
-              card: true
+        suggestions: {
+          include: {
+            suggester: true,
+            responder: true,
+            cards: {
+              include: {
+                card: true
+              }
             }
+          },
+          orderBy: {
+            createdAt: 'asc'
           }
         },
-        orderBy: {
-          createdAt: 'asc'
-        }
-      },
-      solutions: {
-        include: {
-          suspectCard: true,
-          weaponCard: true,
-          roomCard: true
+        solutions: {
+          include: {
+            suspectCard: true,
+            weaponCard: true,
+            roomCard: true
+          }
         }
       }
-    }
-  });
-  
-  if (!game) return null;
-  
-  // Convert database models to app models
-  const appPlayers: Player[] = game.players.map((player: any) => {
-    const cardStatuses = new Map();
-    
-    player.cardStatuses.forEach((status: any) => {
-      const card = prismaCardToAppCard(status.card as PrismaCard);
-      cardStatuses.set(`${card.type}:${card.name}`, status.status as CardStatus);
     });
     
-    return {
-      id: player.position,
-      name: player.name,
-      isUser: player.isUser,
-      cardCount: player.cardCount,
-      cardStatuses
-    };
-  });
-  
-  // Convert suggestions
-  const appSuggestions: Suggestion[] = game.suggestions.map((suggestion: any) => {
-    const suspectCard = suggestion.cards.find((c: any) => c.card.category === 'SUSPECT')?.card;
-    const weaponCard = suggestion.cards.find((c: any) => c.card.category === 'WEAPON')?.card;
-    const roomCard = suggestion.cards.find((c: any) => c.card.category === 'ROOM')?.card;
-    
-    const shownCard = suggestion.cards.find((c: any) => c.wasShown)?.card;
-    
-    if (!suspectCard || !weaponCard || !roomCard) {
-      throw new Error('Suggestion missing required cards');
+    // If no game found, check if it's in the data field of another game
+    if (!game) {
+      // Check if this is serialized in the data field
+      const gameWithData = await prisma.game.findUnique({
+        where: { id },
+        select: { data: true }
+      });
+      
+      if (gameWithData?.data) {
+        // Return the data directly if it's a complete game state
+        return gameWithData.data as unknown as GameState;
+      }
+      
+      return null;
     }
     
-    return {
-      playerId: suggestion.suggester.position,
-      suspect: suspectCard.name as Suspect,
-      weapon: weaponCard.name as Weapon,
-      room: roomCard.name as Room,
-      responderId: suggestion.responder ? suggestion.responder.position : null,
-      cardShown: shownCard ? prismaCardToAppCard(shownCard as PrismaCard) : undefined
+    // Convert database models to app models
+    const appPlayers: Player[] = game.players.map((player: any) => {
+      // Initialize cardStatuses as a Map
+      const cardStatuses = new Map<string, CardStatus>();
+      
+      // Handle different formats of cardStatuses
+      if (Array.isArray(player.cardStatuses)) {
+        player.cardStatuses.forEach((status: any) => {
+          if (status.card) {
+            try {
+              const card = prismaCardToAppCard(status.card as PrismaCard);
+              cardStatuses.set(`${card.type}:${card.name}`, status.status as CardStatus);
+            } catch (e) {
+              console.error("Error processing card status:", e);
+            }
+          }
+        });
+      } else if (player.cardStatuses && typeof player.cardStatuses === 'object') {
+        // Handle when cardStatuses is a plain object (JSON)
+        Object.entries(player.cardStatuses).forEach(([key, value]) => {
+          cardStatuses.set(key, value as CardStatus);
+        });
+      }
+      
+      return {
+        id: player.position,
+        name: player.name,
+        isUser: player.isUser,
+        cardCount: player.cardCount,
+        cardStatuses
+      };
+    });
+    
+    // Convert suggestions
+    const appSuggestions: Suggestion[] = (game.suggestions || []).map((suggestion: any) => {
+      let suspectCard, weaponCard, roomCard, shownCard;
+      
+      // Handle different formats
+      if (Array.isArray(suggestion.cards)) {
+        suspectCard = suggestion.cards.find((c: any) => c.card?.category === 'SUSPECT')?.card;
+        weaponCard = suggestion.cards.find((c: any) => c.card?.category === 'WEAPON')?.card;
+        roomCard = suggestion.cards.find((c: any) => c.card?.category === 'ROOM')?.card;
+        shownCard = suggestion.cards.find((c: any) => c.wasShown)?.card;
+      } else if (suggestion.suspect && suggestion.weapon && suggestion.room) {
+        // Already in the app format
+        return suggestion;
+      } else {
+        console.error("Invalid suggestion format", suggestion);
+        return null;
+      }
+      
+      if (!suspectCard || !weaponCard || !roomCard) {
+        console.error("Suggestion missing required cards", suggestion);
+        return null;
+      }
+      
+      return {
+        playerId: suggestion.suggester?.position ?? suggestion.playerId,
+        suspect: suspectCard.name as Suspect,
+        weapon: weaponCard.name as Weapon,
+        room: roomCard.name as Room,
+        responderId: suggestion.responder ? suggestion.responder.position : suggestion.responderId,
+        cardShown: shownCard ? prismaCardToAppCard(shownCard as PrismaCard) : undefined
+      };
+    }).filter(Boolean);
+    
+    // Convert solution
+    const solution = {
+      suspect: game.solutions?.suspectCard ? game.solutions.suspectCard.name as Suspect : null,
+      weapon: game.solutions?.weaponCard ? game.solutions.weaponCard.name as Weapon : null,
+      room: game.solutions?.roomCard ? game.solutions.roomCard.name as Room : null
     };
-  });
-  
-  // Convert solution
-  const solution = {
-    suspect: game.solutions?.suspectCard ? game.solutions.suspectCard.name as Suspect : null,
-    weapon: game.solutions?.weaponCard ? game.solutions.weaponCard.name as Weapon : null,
-    room: game.solutions?.roomCard ? game.solutions.roomCard.name as Room : null
-  };
-  
-  return {
-    players: appPlayers,
-    suggestions: appSuggestions,
-    solution,
-    currentPlayerId: 0 // We'll set this based on the current game state
-  };
+    
+    return {
+      players: appPlayers,
+      suggestions: appSuggestions,
+      solution,
+      currentPlayerId: game.data?.currentPlayerId || 0
+    };
+  } catch (error) {
+    console.error('Error fetching game:', error);
+    return null;
+  }
 }
 
 // Add suggestion to game
@@ -306,10 +352,19 @@ export async function addSuggestion(
 // Save entire game state
 export async function saveGameState(gameId: string, state: GameState): Promise<boolean> {
   try {
+    // Make sure cardStatuses is properly serialized
+    const cleanedState = {
+      ...state,
+      players: state.players.map(player => ({
+        ...player,
+        cardStatuses: Object.fromEntries(player.cardStatuses)
+      }))
+    };
+    
     await prisma.game.update({
       where: { id: gameId },
       data: {
-        data: state as any
+        data: cleanedState as any
       }
     });
     return true;

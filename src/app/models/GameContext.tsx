@@ -37,8 +37,37 @@ export function GameContextProvider({ children }: { children: ReactNode }) {
   // When the game state changes, recalculate probabilities
   useEffect(() => {
     if (gameState) {
-      const newProbabilities = calculateProbabilities(gameState);
-      setProbabilities(newProbabilities);
+      try {
+        // Make sure card statuses are properly set up as Maps
+        const validatedState = {
+          ...gameState,
+          players: gameState.players.map(player => {
+            // Ensure cardStatuses is a Map
+            if (!(player.cardStatuses instanceof Map)) {
+              const mapCardStatuses = new Map<string, CardStatus>();
+              
+              // If it's an object, convert it to a Map
+              if (typeof player.cardStatuses === 'object' && player.cardStatuses !== null) {
+                Object.entries(player.cardStatuses).forEach(([key, value]) => {
+                  mapCardStatuses.set(key, value as CardStatus);
+                });
+              }
+              
+              return {
+                ...player,
+                cardStatuses: mapCardStatuses
+              };
+            }
+            
+            return player;
+          })
+        };
+        
+        const newProbabilities = calculateProbabilities(validatedState);
+        setProbabilities(newProbabilities);
+      } catch (error) {
+        console.error("Error calculating probabilities:", error);
+      }
     }
   }, [gameState]);
 
@@ -89,8 +118,35 @@ export function GameContextProvider({ children }: { children: ReactNode }) {
         throw new Error(`Failed to load game: ${response.statusText}`);
       }
       
-      const gameState = await response.json();
-      setGameState(gameState);
+      const data = await response.json();
+      
+      // Process and validate the loaded game state
+      const processedGameState = {
+        ...data,
+        players: data.players.map((player: any) => {
+          // Convert cardStatuses to a Map if it's not already
+          let cardStatusesMap: Map<string, CardStatus>;
+          
+          if (player.cardStatuses instanceof Map) {
+            cardStatusesMap = player.cardStatuses;
+          } else {
+            cardStatusesMap = new Map<string, CardStatus>();
+            // If cardStatuses is a plain object, convert to Map
+            if (player.cardStatuses && typeof player.cardStatuses === 'object') {
+              Object.entries(player.cardStatuses).forEach(([key, value]) => {
+                cardStatusesMap.set(key, value as CardStatus);
+              });
+            }
+          }
+          
+          return {
+            ...player,
+            cardStatuses: cardStatusesMap
+          };
+        })
+      };
+      
+      setGameState(processedGameState);
       setGameId(id);
       setIsSetup(true);
     } catch (error) {
@@ -122,12 +178,29 @@ export function GameContextProvider({ children }: { children: ReactNode }) {
     if (!gameState || !gameId) return;
     
     try {
+      // Make sure cardStatuses is properly serialized
+      const cleanedState = {
+        ...gameState,
+        players: gameState.players.map(player => {
+          // Convert Map to a plain object for serialization
+          const serializedCardStatuses: Record<string, CardStatus> = {};
+          player.cardStatuses.forEach((value, key) => {
+            serializedCardStatuses[key] = value;
+          });
+          
+          return {
+            ...player,
+            cardStatuses: serializedCardStatuses
+          };
+        })
+      };
+      
       const response = await fetch(`/api/games/${gameId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(gameState),
+        body: JSON.stringify(cleanedState),
       });
       
       if (!response.ok) {
