@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardType, Room, Suspect, Weapon } from "../types/gameTypes";
+import { Card, Room, Suspect, Weapon } from "../types/gameTypes";
 import { useGameContext } from "../models/GameContext";
 import { createRoomCard, createSuspectCard, createWeaponCard } from "../utils/cardTypeGuards";
 
@@ -87,16 +87,16 @@ export default function GameSetup() {
   };
   
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6">Game Setup</h2>
+    <div className="p-6 bg-gray-800 rounded-lg shadow-md max-w-3xl mx-auto">
+      <h2 className="text-2xl font-bold mb-6 text-white">Game Setup</h2>
       
       <form onSubmit={handleSubmit}>
         <div className="mb-6">
-          <label className="block mb-2 font-semibold">Number of Players</label>
+          <label className="block mb-2 font-semibold text-white">Number of Players</label>
           <select
             value={numPlayers}
             onChange={handleNumPlayersChange}
-            className="w-full border border-gray-300 rounded px-3 py-2"
+            className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2"
           >
             {[3, 4, 5, 6].map(num => (
               <option key={num} value={num}>{num}</option>
@@ -105,7 +105,7 @@ export default function GameSetup() {
         </div>
         
         <div className="mb-6">
-          <label className="block mb-2 font-semibold">Player Names</label>
+          <label className="block mb-2 font-semibold text-white">Player Names</label>
           <div className="space-y-3">
             {playerNames.map((name, index) => (
               <div key={index} className="flex items-center">
@@ -113,10 +113,10 @@ export default function GameSetup() {
                   type="text"
                   value={name}
                   onChange={e => handlePlayerNameChange(index, e.target.value)}
-                  className="flex-1 border border-gray-300 rounded px-3 py-2"
+                  className="flex-1 bg-gray-700 border border-gray-600 text-white rounded px-3 py-2"
                   placeholder={`Player ${index + 1}`}
                 />
-                <label className="ml-4">
+                <label className="ml-4 text-white">
                   <input
                     type="radio"
                     name="userPosition"
@@ -132,15 +132,15 @@ export default function GameSetup() {
         </div>
         
         <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-3">Your Cards</h3>
-          <p className="text-sm text-gray-600 mb-4">Select the cards you have in your hand.</p>
+          <h3 className="text-lg font-semibold mb-3 text-white">Your Cards</h3>
+          <p className="text-sm text-gray-300 mb-4">Select the cards you have in your hand.</p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <h4 className="font-medium mb-2">Suspects</h4>
+              <h4 className="font-medium mb-2 text-white">Suspects</h4>
               <div className="space-y-2">
                 {Object.values(Suspect).map(suspect => (
-                  <label key={suspect} className="flex items-center">
+                  <label key={suspect} className="flex items-center text-white">
                     <input
                       type="checkbox"
                       checked={selectedSuspects.includes(suspect)}
@@ -154,10 +154,10 @@ export default function GameSetup() {
             </div>
             
             <div>
-              <h4 className="font-medium mb-2">Weapons</h4>
+              <h4 className="font-medium mb-2 text-white">Weapons</h4>
               <div className="space-y-2">
                 {Object.values(Weapon).map(weapon => (
-                  <label key={weapon} className="flex items-center">
+                  <label key={weapon} className="flex items-center text-white">
                     <input
                       type="checkbox"
                       checked={selectedWeapons.includes(weapon)}
@@ -171,10 +171,10 @@ export default function GameSetup() {
             </div>
             
             <div>
-              <h4 className="font-medium mb-2">Rooms</h4>
+              <h4 className="font-medium mb-2 text-white">Rooms</h4>
               <div className="space-y-2">
                 {Object.values(Room).map(room => (
-                  <label key={room} className="flex items-center">
+                  <label key={room} className="flex items-center text-white">
                     <input
                       type="checkbox"
                       checked={selectedRooms.includes(room)}
@@ -192,7 +192,7 @@ export default function GameSetup() {
         <div className="mt-6">
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
+            className="w-full bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition-colors"
           >
             Start Game
           </button>

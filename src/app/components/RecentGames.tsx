@@ -22,7 +22,7 @@ export default function RecentGames() {
         if (response.ok) {
           const data = await response.json();
           // Convert string dates to Date objects
-          const gamesWithDates = data.map((game: any) => ({
+          const gamesWithDates = data.map((game: {id: string, createdAt: string, name?: string}) => ({
             ...game,
             createdAt: new Date(game.createdAt)
           }));
@@ -54,28 +54,28 @@ export default function RecentGames() {
   };
 
   if (isLoading) {
-    return <div className="text-center p-4">Loading recent games...</div>;
+    return <div className="text-center p-4 text-gray-300">Loading recent games...</div>;
   }
 
   if (games.length === 0) {
-    return <div className="text-center p-4 italic text-gray-500">No saved games found.</div>;
+    return <div className="text-center p-4 italic text-gray-400">No saved games found.</div>;
   }
 
   return (
     <div className="mt-8 w-full max-w-md mx-auto">
-      <h2 className="text-xl font-semibold mb-4">Recent Games</h2>
-      <div className="overflow-hidden border border-gray-200 rounded-md">
-        <ul className="divide-y divide-gray-200">
+      <h2 className="text-xl font-semibold mb-4 text-white">Recent Games</h2>
+      <div className="overflow-hidden border border-gray-700 rounded-md bg-gray-800">
+        <ul className="divide-y divide-gray-700">
           {games.map((game) => (
-            <li key={game.id} className="p-4 hover:bg-gray-50">
+            <li key={game.id} className="p-4 hover:bg-gray-700">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="font-medium">{game.name || `Game ${game.id.substring(0, 8)}`}</h3>
-                  <p className="text-sm text-gray-500">{formatDate(game.createdAt)}</p>
+                  <h3 className="font-medium text-white">{game.name || `Game ${game.id.substring(0, 8)}`}</h3>
+                  <p className="text-sm text-gray-400">{formatDate(game.createdAt)}</p>
                 </div>
                 <button
                   onClick={() => handleLoadGame(game.id)}
-                  className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors"
+                  className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors"
                 >
                   Load
                 </button>

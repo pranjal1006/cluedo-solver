@@ -28,7 +28,7 @@ export default function GameBoard() {
   // Gets status class for displaying cards
   const getStatusClass = (playerId: number, cardType: CardType, cardName: string): string => {
     const player = gameState.players[playerId];
-    if (!player) return "bg-gray-200"; // Unknown
+    if (!player) return "bg-gray-700 text-gray-300"; // Unknown
     
     let card;
     if (cardType === CardType.SUSPECT) {
@@ -44,27 +44,27 @@ export default function GameBoard() {
     
     switch (status) {
       case CardStatus.HAS:
-        return "bg-green-400"; // Has card
+        return "bg-green-700 text-white"; // Has card
       case CardStatus.DOES_NOT_HAVE:
-        return "bg-red-400"; // Doesn't have card
+        return "bg-red-700 text-white"; // Doesn't have card
       case CardStatus.MAYBE_HAS:
-        return "bg-yellow-200"; // Maybe has card
+        return "bg-yellow-600 text-white"; // Maybe has card
       default:
-        return "bg-gray-200"; // Unknown
+        return "bg-gray-700 text-gray-300"; // Unknown
     }
   };
   
   // Get solution probability class
   const getSolutionProbabilityClass = (probability: number): string => {
-    if (probability >= 0.9) return "bg-green-600 text-white";
-    if (probability >= 0.5) return "bg-green-400";
-    if (probability >= 0.3) return "bg-yellow-200";
-    if (probability > 0) return "bg-yellow-100";
-    return "bg-red-400";
+    if (probability >= 0.9) return "bg-green-700 text-white";
+    if (probability >= 0.5) return "bg-green-600 text-white";
+    if (probability >= 0.3) return "bg-yellow-600 text-white";
+    if (probability > 0) return "bg-yellow-700 text-white";
+    return "bg-red-700 text-white";
   };
   
   // Handle suggestion form change
-  const handleSuggestionChange = (field: string, value: any) => {
+  const handleSuggestionChange = (field: string, value: string | number | null) => {
     if (field === 'playerId') {
       // Convert player ID to number
       setSuggestionForm(prev => ({ ...prev, [field]: Number(value) }));
@@ -100,7 +100,7 @@ export default function GameBoard() {
   };
   
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 text-white">
       <h1 className="text-3xl font-bold mb-6">Cluedo Solver</h1>
       
       {/* Players Information */}
@@ -110,11 +110,11 @@ export default function GameBoard() {
           {gameState.players.map(player => (
             <div 
               key={player.id} 
-              className={`border rounded-lg p-4 ${player.isUser ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+              className={`border rounded-lg p-4 ${player.isUser ? 'border-red-500 bg-slate-800' : 'border-gray-600 bg-gray-800'}`}
             >
               <div className="flex justify-between mb-2">
                 <h3 className="font-medium text-lg">{player.name}</h3>
-                {player.isUser && <span className="bg-blue-500 text-white px-2 py-0.5 rounded text-xs">You</span>}
+                {player.isUser && <span className="bg-red-600 text-white px-2 py-0.5 rounded text-xs">You</span>}
               </div>
               <p>Cards: {player.cardCount}</p>
             </div>
@@ -126,19 +126,19 @@ export default function GameBoard() {
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-3">Solution</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="border rounded-lg p-4">
+          <div className="border border-gray-600 rounded-lg p-4 bg-gray-800">
             <h3 className="font-medium mb-2">Suspect</h3>
             <p className="text-lg">
               {gameState.solution.suspect || "Unknown"}
             </p>
           </div>
-          <div className="border rounded-lg p-4">
+          <div className="border border-gray-600 rounded-lg p-4 bg-gray-800">
             <h3 className="font-medium mb-2">Weapon</h3>
             <p className="text-lg">
               {gameState.solution.weapon || "Unknown"}
             </p>
           </div>
-          <div className="border rounded-lg p-4">
+          <div className="border border-gray-600 rounded-lg p-4 bg-gray-800">
             <h3 className="font-medium mb-2">Room</h3>
             <p className="text-lg">
               {gameState.solution.room || "Unknown"}
@@ -151,7 +151,7 @@ export default function GameBoard() {
       <div className="mb-8">
         <button 
           onClick={() => setShowProbabilityCard(!showProbabilityCard)} 
-          className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
+          className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition-colors"
         >
           {showProbabilityCard ? "Hide" : "Show"} Probability Card
         </button>
@@ -161,13 +161,13 @@ export default function GameBoard() {
       {showProbabilityCard && (
         <div className="mb-8 overflow-x-auto">
           <h2 className="text-xl font-semibold mb-3">Probability Card</h2>
-          <table className="min-w-full bg-white border border-gray-300">
+          <table className="min-w-full bg-gray-800 border border-gray-600">
             <thead>
-              <tr className="bg-gray-100">
-                <th className="py-2 px-3 border-b text-left">Card</th>
-                <th className="py-2 px-3 border-b text-center">Solution</th>
+              <tr className="bg-gray-700">
+                <th className="py-2 px-3 border-b border-gray-600 text-left">Card</th>
+                <th className="py-2 px-3 border-b border-gray-600 text-center">Solution</th>
                 {gameState.players.map(player => (
-                  <th key={player.id} className="py-2 px-3 border-b text-center">
+                  <th key={player.id} className="py-2 px-3 border-b border-gray-600 text-center">
                     {player.name}
                   </th>
                 ))}
@@ -176,7 +176,7 @@ export default function GameBoard() {
             <tbody>
               {/* Suspects */}
               <tr>
-                <td colSpan={gameState.players.length + 2} className="py-1 px-3 bg-gray-600 text-white font-medium">
+                <td colSpan={gameState.players.length + 2} className="py-1 px-3 bg-red-800 text-white font-medium">
                   Suspects
                 </td>
               </tr>
@@ -186,7 +186,7 @@ export default function GameBoard() {
                 );
                 
                 return (
-                  <tr key={suspect} className="border-b">
+                  <tr key={suspect} className="border-b border-gray-600">
                     <td className="py-1 px-3">{suspect}</td>
                     <td className={`py-1 px-3 text-center ${prob ? getSolutionProbabilityClass(prob.inSolution) : ''}`}>
                       {prob ? getProbabilityPercentage(prob.inSolution) : '0%'}
@@ -208,7 +208,7 @@ export default function GameBoard() {
               
               {/* Weapons */}
               <tr>
-                <td colSpan={gameState.players.length + 2} className="py-1 px-3 bg-gray-600 text-white font-medium">
+                <td colSpan={gameState.players.length + 2} className="py-1 px-3 bg-red-800 text-white font-medium">
                   Weapons
                 </td>
               </tr>
@@ -218,7 +218,7 @@ export default function GameBoard() {
                 );
                 
                 return (
-                  <tr key={weapon} className="border-b">
+                  <tr key={weapon} className="border-b border-gray-600">
                     <td className="py-1 px-3">{weapon}</td>
                     <td className={`py-1 px-3 text-center ${prob ? getSolutionProbabilityClass(prob.inSolution) : ''}`}>
                       {prob ? getProbabilityPercentage(prob.inSolution) : '0%'}
@@ -240,7 +240,7 @@ export default function GameBoard() {
               
               {/* Rooms */}
               <tr>
-                <td colSpan={gameState.players.length + 2} className="py-1 px-3 bg-gray-600 text-white font-medium">
+                <td colSpan={gameState.players.length + 2} className="py-1 px-3 bg-red-800 text-white font-medium">
                   Rooms
                 </td>
               </tr>
@@ -250,7 +250,7 @@ export default function GameBoard() {
                 );
                 
                 return (
-                  <tr key={room} className="border-b">
+                  <tr key={room} className="border-b border-gray-600">
                     <td className="py-1 px-3">{room}</td>
                     <td className={`py-1 px-3 text-center ${prob ? getSolutionProbabilityClass(prob.inSolution) : ''}`}>
                       {prob ? getProbabilityPercentage(prob.inSolution) : '0%'}
@@ -277,7 +277,7 @@ export default function GameBoard() {
       {/* Record Suggestion Form */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-3">Record Suggestion</h2>
-        <form onSubmit={handleSuggestionSubmit} className="border rounded-lg p-4">
+        <form onSubmit={handleSuggestionSubmit} className="border border-gray-600 rounded-lg p-4 bg-gray-800">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             {/* Player making suggestion */}
             <div>
@@ -285,7 +285,7 @@ export default function GameBoard() {
               <select 
                 value={suggestionForm.playerId}
                 onChange={(e) => handleSuggestionChange('playerId', e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2"
+                className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2"
               >
                 {gameState.players.map(player => (
                   <option key={player.id} value={player.id}>{player.name}</option>
@@ -299,7 +299,7 @@ export default function GameBoard() {
               <select 
                 value={suggestionForm.responderId === null ? "" : suggestionForm.responderId}
                 onChange={(e) => handleSuggestionChange('responderId', e.target.value === "" ? null : e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2"
+                className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2"
               >
                 <option value="">No one responded</option>
                 {gameState.players.filter(p => p.id !== suggestionForm.playerId).map(player => (
@@ -316,7 +316,7 @@ export default function GameBoard() {
               <select 
                 value={suggestionForm.suspect}
                 onChange={(e) => handleSuggestionChange('suspect', e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2"
+                className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2"
               >
                 {Object.values(Suspect).map(suspect => (
                   <option key={suspect} value={suspect}>{suspect}</option>
@@ -329,7 +329,7 @@ export default function GameBoard() {
               <select 
                 value={suggestionForm.weapon}
                 onChange={(e) => handleSuggestionChange('weapon', e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2"
+                className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2"
               >
                 {Object.values(Weapon).map(weapon => (
                   <option key={weapon} value={weapon}>{weapon}</option>
@@ -342,7 +342,7 @@ export default function GameBoard() {
               <select 
                 value={suggestionForm.room}
                 onChange={(e) => handleSuggestionChange('room', e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2"
+                className="w-full bg-gray-700 border border-gray-600 text-white rounded px-3 py-2"
               >
                 {Object.values(Room).map(room => (
                   <option key={room} value={room}>{room}</option>
@@ -353,7 +353,7 @@ export default function GameBoard() {
           
           <button
             type="submit"
-            className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition-colors"
+            className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition-colors"
           >
             Record Suggestion
           </button>
@@ -364,23 +364,23 @@ export default function GameBoard() {
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-3">Suggestion History</h2>
         {gameState.suggestions.length === 0 ? (
-          <p className="text-gray-500">No suggestions have been made yet.</p>
+          <p className="text-gray-400">No suggestions have been made yet.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full border border-gray-300">
+            <table className="min-w-full border border-gray-600 bg-gray-800">
               <thead>
-                <tr className="bg-gray-100">
-                  <th className="py-2 px-3 border-b">Player</th>
-                  <th className="py-2 px-3 border-b">Suspect</th>
-                  <th className="py-2 px-3 border-b">Weapon</th>
-                  <th className="py-2 px-3 border-b">Room</th>
-                  <th className="py-2 px-3 border-b">Responder</th>
-                  <th className="py-2 px-3 border-b">Card Shown</th>
+                <tr className="bg-gray-700">
+                  <th className="py-2 px-3 border-b border-gray-600">Player</th>
+                  <th className="py-2 px-3 border-b border-gray-600">Suspect</th>
+                  <th className="py-2 px-3 border-b border-gray-600">Weapon</th>
+                  <th className="py-2 px-3 border-b border-gray-600">Room</th>
+                  <th className="py-2 px-3 border-b border-gray-600">Responder</th>
+                  <th className="py-2 px-3 border-b border-gray-600">Card Shown</th>
                 </tr>
               </thead>
               <tbody>
                 {gameState.suggestions.map((suggestion, index) => (
-                  <tr key={index} className="border-b">
+                  <tr key={index} className="border-b border-gray-600">
                     <td className="py-2 px-3">{gameState.players[suggestion.playerId]?.name || `Player ${suggestion.playerId}`}</td>
                     <td className="py-2 px-3">{suggestion.suspect}</td>
                     <td className="py-2 px-3">{suggestion.weapon}</td>
